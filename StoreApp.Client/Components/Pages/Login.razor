@@ -1,0 +1,44 @@
+﻿@page "/"
+@* Temp, sätt till "/Login" senare *@
+@using StoreApp.Shared.Interfaces
+@using StoreApp.Shared.Dtos.UserDtos
+@using System.ComponentModel.DataAnnotations
+@using StoreApp.Client.Components.Layout
+@rendermode InteractiveServer
+@inject IUserService<UserDto> UserService
+@inject IAuthenticationService AuthenticationService
+@inject NavigationManager NavigationManager
+
+<PageTitle>Login</PageTitle>
+
+<h3>Login</h3>
+
+<div style="padding-top: 50px;" />
+<MudText Align="Align.Center" Typo="Typo.h3">Login</MudText>
+
+<MudContainer Fixed="true" Style="padding-top: 100px; padding-left: 50px; padding-right: 50px;">
+    <MudCard Class="login-card" Elevation="5">
+        <MudTabs Rounded="true" Color="Color.Info" @bind-ActivePanelIndex="_activeTab">
+                <MudTabPanel Text="Login" ID="1" tabindex="1">
+                    <MudTextField @bind-Value="@LoginEmail" Label="Email" AutoFocus="true" Required="true" />
+                    <MudTextField @bind-Value="@LoginPassword" Label="Password" Type="InputType.Password" Required="true" />
+                    <MudButton Variant="Variant.Filled" Color="Color.Info" @onclick="LoginUser" Style="margin: 10px;">Login</MudButton>
+                </MudTabPanel>
+                <MudTabPanel Text="Register User" ID="2" tabindex="2">
+                    <MudTextField @bind-Value="NewCustomerEmail" Label="Email" AutoFocus="true" Required="true"/>
+                    <MudTextField @bind-Value="NewCustomerPassword" Label="Password" Type="InputType.Password" Required="true"/>
+                    <MudTextField @bind-Value="NewCustomerFirstName" Label="First Name" Required="true"/>
+                    <MudTextField @bind-Value="NewCustomerLastName" Label="Last Name" Required="true"/>
+
+                    <MudTextField @bind-Value="NewCustomerPhone" Label="Phone" Required="true"/>
+                    <MudTextField @bind-Value="NewCustomerAddress" Label="Address" Required="true"/>
+                    <MudTextField @bind-Value="NewCustomerZipcode" Label="Zipcode" Required="true"/>
+                    <MudTextField @bind-Value="NewCustomerCity" Label="City" Required="true"/>
+                    <MudTextField @bind-Value="NewCustomerRegion" Label="Region" Required="true"/>
+                    <MudTextField @bind-Value="NewCustomerCountry" Label="Country" Required="true"/>
+                    <MudCheckBox @bind-Value="IsAdmin" Label="Admin"></MudCheckBox>
+                    <MudButton ButtonType="ButtonType.Button" Variant="Variant.Filled" Color="Color.Info" @onclick="RegisterUser" Style="margin: 10px;">Register</MudButton>
+                </MudTabPanel>
+        </MudTabs>
+    </MudCard>
+</MudContainer>

@@ -1,0 +1,178 @@
+﻿@using StoreApp.Shared.Interfaces
+@using StoreApp.Shared.Dtos.ProductDtos
+@using StoreApp.Client.Services
+@using StoreApp.Shared.Dtos.OrderDtos
+@using StoreApp.Shared.Dtos.UserDtos
+@using StoreApp.Shared.Models
+@inherits LayoutComponentBase
+@inject IAuthenticationService AuthenticationService
+@inject IShoppingCartService<ProductDto> ShoppingCartService
+@inject UserService UserService
+@inject NavigationManager NavigationManager
+
+<MudThemeProvider />
+<MudDialogProvider />
+<MudSnackbarProvider />
+
+<MudLayout>
+
+    <MudAppBar Fixed="true" Dense="true" Style="@($"background:{Colors.Teal.Lighten2};")" >
+        <MudIconButton Icon="@Icons.Material.Filled.ShoppingCart" Color="Color.Inherit" Edge="Edge.Start" OnClick="DrawerToggle" />
+        <MudSpacer />
+        <MudText>
+            <h1>Kville Brädspelscafé</h1>
+        </MudText>
+        <MudSpacer />
+        @if (AuthenticationService.IsCustomerLoggedIn)
+        {
+        <MudIconButton Icon="@Icons.Material.Filled.Store" Color="Color.Inherit" Href="/Store" />
+        <MudIconButton Icon="@Icons.Material.Filled.Person" Color="Color.Inherit" Href="/CustomerSettings" />
+        <MudIconButton Icon="@Icons.Material.Filled.Logout" Color="Color.Inherit" @onclick="Logout" />
+        }
+        else if (AuthenticationService.IsAdminLoggedIn)
+        {
+        <MudIconButton Icon="@Icons.Material.Filled.Store" Color="Color.Inherit" Href="/Store" />
+        <MudIconButton Icon="@Icons.Material.Filled.AdminPanelSettings" Color="Color.Inherit" Href="/AdminSettings" />
+        <MudIconButton Icon="@Icons.Material.Filled.Logout" Color="Color.Inherit" @onclick="Logout" />
+        }
+        else
+        {
+        <MudIconButton Icon="@Icons.Material.Filled.Login" Color="Color.Inherit" Href="/" />
+        } 
+
+    </MudAppBar>
+
+    <MudDrawer @bind-Open="@_drawerOpen" Width="@_drawerWidth">
+        <MudDrawerHeader>
+            <MudText Typo="Typo.h6">Shopping Cart</MudText>
+        </MudDrawerHeader>
+        <MudNavMenu>
+            <MudTable Items="ShoppingCartService.UserCart">
+                <HeaderContent>
+                    <MudTh>Amount</MudTh>
+                    <MudTh>Product</MudTh>
+                    <MudTh>Price</MudTh>
+                    <MudTh>Add</MudTh>
+                    <MudTh>Remove</MudTh>
+                    <MudTh>Delete</MudTh>
+                </HeaderContent>
+                <RowTemplate>
+                    <MudTd DataLabel="Amount">@context.Value</MudTd>
+                    <MudTd DataLabel="Product">@context.Key.Name</MudTd>
+                    <MudTd DataLabel="Price">@context.Key.Price SEK</MudTd>
+                    <MudTd DataLabel="Add">
+                        <MudButton Color="Color.Success" Variant="Variant.Filled" OnClick="@(() => AddOneToCart(@context.Key))">+</MudButton>
+                    </MudTd>
+                    <MudTd DataLabel="Remove">
+                        <MudButton Color="Color.Warning" Variant="Variant.Filled" OnClick="@(() => RemoveOneFromCart(@context.Key))">-</MudButton>
+                    </MudTd>
+                    <MudTd DataLabel="Delete">
+                        <MudButton Color="Color.Secondary" Variant="Variant.Filled" OnClick="@(() => DeleteProductFromCart(@context.Key))">Delete</MudButton>
+                    </MudTd>
+                </RowTemplate>
+                <FooterContent>
+                    <MudTh>Total:</MudTh>
+                    <MudTh></MudTh>
+                    <MudTh>@ShoppingCartService.TotalPrice SEK</MudTh>
+                    <MudTh></MudTh>
+                    <MudTh>
+                        <MudButton Color="Color.Info" Variant="Variant.Filled" OnClick="@(() => CreateCustomerOrder())">Checkout</MudButton>
+
+                    </MudTh>
+                </FooterContent>
+            </MudTable>
+        </MudNavMenu>
+    </MudDrawer>
+
+
+    @Body
+
+</MudLayout>
+
+
+
+<div id="blazor-error-ui">
+    An unhandled error has occurred.
+    <a href="" class="reload">Reload</a>
+    <a class="dismiss">🗙</a>
+</div>
+
+@code {
+    bool _drawerOpen;
+    private string _drawerWidth = "700px";
+
+    private void Logout()
+    {
+        AuthenticationService.IsAdminLoggedIn = false;
+        AuthenticationService.IsCustomerLoggedIn = false;
+        AuthenticationService.LoggedInUserEmail = null;
+
+        ShoppingCartService.UserCart.Clear();
+
+        NavigationManager.NavigateTo("/");
+    }
+
+    private void DrawerToggle(MouseEventArgs obj)
+    {
+        _drawerOpen = !_drawerOpen;
+    }
+
+    private async Task AddOneToCart(ProductDto product)
+    {
+        if (!ShoppingCartService.UserCart.TryGetValue(product, out int amount))
+        {
+            ShoppingCartService.UserCart[product] = 1;
+        }
+        else
+        {
+            ShoppingCartService.UserCart[product] = amount + 1;
+        }
+    }
+
+    private async Task RemoveOneFromCart(ProductDto product)
+    {
+        if (ShoppingCartService.UserCart.TryGetValue(product, out int amount))
+        {
+            if (amount > 1)
+            {
+                ShoppingCartService.UserCart[product] = amount - 1;
+            }
+            else
+            {
+                ShoppingCartService.UserCart.Remove(product);
+            }
+        }
+    }
+
+    private async Task DeleteProductFromCart(ProductDto product)
+    {
+        ShoppingCartService.UserCart.Remove(product);
+    }
+
+    private async Task CreateCustomerOrder()
+    {
+        if (AuthenticationService.LoggedInUserEmail is null)
+        {
+            return;
+        }
+
+        var currentUser = await UserService.GetByEmailAsync(AuthenticationService.LoggedInUserEmail);
+
+        var cart = ShoppingCartService.UserCart;
+
+        var cartList = new List<ProductsAmountsDto>();
+        foreach (var c in cart)
+        {
+            cartList.Add(new ProductsAmountsDto
+            {
+                ProductId = c.Key.Id,
+                ProductAmount = c.Value
+            });
+        }
+
+        await UserService.CreateOrder(currentUser.Id, cartList);
+        ShoppingCartService.UserCart.Clear();
+        
+        _drawerOpen = !_drawerOpen;
+    }
+}

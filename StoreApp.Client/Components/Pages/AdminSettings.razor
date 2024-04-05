@@ -1,0 +1,245 @@
+﻿@page "/AdminSettings"
+@using StoreApp.Shared.Interfaces
+@using StoreApp.Shared.Dtos.ProductDtos
+@using StoreApp.Shared.Dtos.UserDtos
+@using StoreApp.Client.Services
+@using StoreApp.Shared.Dtos.OrderDtos
+@rendermode InteractiveServer
+@inject ICategoryService<ProductCategoryDto> CategoryService
+@inject ProductService ProductService
+@inject UserService UserService
+
+
+
+<PageTitle>Admin Settings</PageTitle>
+
+<h3>AdminSettings</h3>
+
+<div style="padding-top: 50px;" />
+<MudText Align="Align.Center" Typo="Typo.h3">Admin Settings</MudText>
+<div style="padding-top: 50px;" />
+
+<MudContainer>
+    <MudPaper>
+        <MudTable Items="@AllOrders" Hover="true" LoadingProgressColor="Color.Info" Filter="new Func<OrderDto,bool>(FilterFuncOrder1)" @bind-SelectedItem="_selectedItemOrder" RowClass="cursor-pointer">
+            <ToolBarContent>
+                <MudText Typo="Typo.h6">Orders</MudText>
+                <MudSpacer />
+                <MudTextField @bind-Value="_searchStringOrder" Placeholder="Search" Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.Search" IconSize="Size.Medium" Class="mt-0"></MudTextField>
+            </ToolBarContent>
+            <HeaderContent>
+                <MudTh>Order ID</MudTh>
+                <MudTh>Customer ID</MudTh>
+                <MudTh>Order Date</MudTh>
+                <MudTh>Total Price</MudTh>
+                <MudTh>Status</MudTh>
+                <MudTh>Products</MudTh>
+            </HeaderContent>
+            <RowTemplate Context="order">
+                <MudTd>@order.Id.ToString()</MudTd>
+                <MudTd>@order.CustomerId</MudTd>
+                <MudTd>@order.OrderDate.ToString("MM/dd/yyyy")</MudTd>
+                <MudTd>@order.TotalPrice</MudTd>
+                <MudTd>@(order.Status ? "Active" : "Inactive")</MudTd>
+                <MudTd>
+                    <MudTd><MudButton Variant="Variant.Outlined" Size="Size.Small" OnClick="@(() => ShowBtnPress(order.Id))">@((order.ShowDetails == true) ? "Hide" : "Show") Product Details</MudButton></MudTd>
+                </MudTd>
+            </RowTemplate>
+            <ChildRowContent>
+                @if (context.ShowDetails)
+                {
+                    <MudTr>
+                        <td colspan="4">
+                            <MudCard Elevation="0">
+                                <MudCardHeader>
+                                    <CardHeaderContent>
+                                        <MudText Typo="Typo.body1">Products in order for order id @context.Id</MudText>
+                                    </CardHeaderContent>
+                                </MudCardHeader>
+                                <MudCardContent Class="pa-0">
+                                    <MudTable Items="@context.Products" Context="Products" Hover="true" Breakpoint="Breakpoint.Sm" Elevation="0">
+                                        <HeaderContent>
+                                            <MudTh>Products</MudTh>
+                                            <MudTh>Amount</MudTh>
+                                            <MudTh>Price</MudTh>
+                                        </HeaderContent>
+                                        <RowTemplate>
+                                            <MudTd DataLabel="Products">
+                                                @Products.Product.Name
+                                            </MudTd>
+                                            <MudTd DataLabel="Amount">
+                                                @Products.Amount
+                                            </MudTd>
+                                            <MudTd DataLabel="Price">
+                                                @((Products.Product.Price * Products.Amount).ToString("0.00")) SEK
+                                            </MudTd>
+                                        </RowTemplate>
+                                    </MudTable>
+                                </MudCardContent>
+                            </MudCard>
+                        </td>
+                    </MudTr>
+                }
+            </ChildRowContent>
+            <PagerContent>
+                <MudTablePager />
+            </PagerContent>
+        </MudTable>
+    </MudPaper>
+</MudContainer>
+<div style="padding-top: 50px;" />
+
+<MudGrid>
+    <MudItem xs="12">
+        <MudTable Items="@AllProducts" Hover="true" LoadingProgressColor="Color.Info" Filter="new Func<ProductDto,bool>(FilterFuncProduct1)" @bind-SelectedItem="_selectedItemProduct">
+            <ToolBarContent>
+                <MudText Typo="Typo.h6">Products in database</MudText>
+                <MudSpacer />
+                <MudTextField @bind-Value="_searchStringProduct" Placeholder="Search" Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.Search" IconSize="Size.Medium" Class="mt-0"></MudTextField>
+            </ToolBarContent>
+            <HeaderContent>
+                <MudTh>Id</MudTh>
+                <MudTh>Name</MudTh>
+                <MudTh>Description</MudTh>
+                <MudTh>Category</MudTh>
+                <MudTh>Stock</MudTh>
+                <MudTh>Available</MudTh>
+                <MudTh>Toggle Availability</MudTh>
+                <MudTh>Edit</MudTh>
+                <MudTh>Delete</MudTh>
+            </HeaderContent>
+            <RowTemplate>
+                <MudTd DataLabel="Id">@context.Id</MudTd>
+                <MudTd DataLabel="Name">@context.Name</MudTd>
+                <MudTd DataLabel="Description">@context.Description</MudTd>
+                <MudTd DataLabel="Category">@GetCategoryName(context.Category)</MudTd>
+                <MudTd DataLabel="Stock">@context.Stock</MudTd>
+                <MudTd DataLabel="Available">@context.Status</MudTd>
+                <MudTd DataLabel="Toggle Availability">
+                    <MudButton Color="Color.Surface" Variant="Variant.Filled" OnClick="@(() => ToggleProductStatus(@context.Id))">Toggle</MudButton>
+                </MudTd>
+                <MudTd DataLabel="Edit">
+                    <MudButton Color="Color.Tertiary" Variant="Variant.Filled" OnClick="@(() => EditProduct(@context.Id))">Edit product</MudButton>
+                </MudTd>
+                <MudTd DataLabel="Delete">
+                    <MudButton Color="Color.Secondary" Variant="Variant.Filled" OnClick="@(() => DeleteProductAsync(@context.Id))">Delete</MudButton>
+                </MudTd>
+            </RowTemplate>
+            <PagerContent>
+                <MudTablePager />
+            </PagerContent>
+        </MudTable>
+    </MudItem>
+
+    <MudItem xs="12">
+
+        <MudContainer>
+            <MudPaper>
+                <MudText Typo="Typo.h6">Update product</MudText>
+                <MudGrid>
+                    <MudItem xs="12" md="6">
+                        <MudTextField Disabled="true" Label="Id" @bind-Value="_product.Id" />
+                    </MudItem>
+                    <MudItem xs="12" md="6">
+                        <MudTextField Label="Name" @bind-Value="_product.Name" />
+                    </MudItem>
+                    <MudItem xs="12" md="6">
+                        <MudTextField Label="Description" @bind-Value="_product.Description" />
+                    </MudItem>
+                    <MudItem xs="12" md="6">
+                        <MudTextField Label="Price" @bind-Value="_product.Price" />
+                    </MudItem>
+                    <MudItem xs="12" md="6">
+                        <MudTextField Disabled="true" Label="Category" Value="@GetCategoryName(_product.Category)" />
+                    </MudItem>
+                    <MudItem xs="12" md="6">
+                        <MudTextField Label="Image URL" @bind-Value="_product.ImageUrl" />
+                    </MudItem>
+                    <MudItem xs="12" md="6">
+                        <MudTextField Label="Stock" @bind-Value="_product.Stock" />
+                    </MudItem>
+                    <MudItem xs="12" md="6">
+                        <MudTextField Disabled="true" Label="Status" @bind-Value="_product.Status" />
+                    </MudItem>
+                </MudGrid>
+                <MudButton Color="Color.Primary" Variant="Variant.Filled" OnClick="UpdateProduct">Update product</MudButton>
+            </MudPaper>
+        </MudContainer>
+    </MudItem>
+
+    <MudItem xs="12">
+        <MudTable Items="@AllUsers" Hover="true" LoadingProgressColor="Color.Info" Filter="new Func<UserDto,bool>(FilterFuncUser1)" @bind-SelectedItem="_selectedItemUser">
+            <ToolBarContent>
+                <MudText Typo="Typo.h6">Users in database</MudText>
+                <MudSpacer />
+                <MudTextField @bind-Value="_searchStringUser" Placeholder="Search" Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.Search" IconSize="Size.Medium" Class="mt-0"></MudTextField>
+            </ToolBarContent>
+            <HeaderContent>
+                <MudTh>Email</MudTh>
+                <MudTh>First Name</MudTh>
+                <MudTh>Last Name</MudTh>
+                <MudTh>Role</MudTh>
+            </HeaderContent>
+            <RowTemplate>
+                <MudTd DataLabel="Email">@context.Email</MudTd>
+                <MudTd DataLabel="First Name">@context.FirstName</MudTd>
+                <MudTd DataLabel="Last Name">@context.LastName</MudTd>
+                <MudTd DataLabel="Role">@context.Role</MudTd>
+            </RowTemplate>
+            <PagerContent>
+                <MudTablePager />
+            </PagerContent>
+        </MudTable>
+    </MudItem>
+
+
+    <MudItem xs="3">
+        <MudContainer Fixed="true" Class="justify-content-center">
+            <MudText Typo="Typo.h6">Add Product</MudText>
+            <MudGrid>
+                <MudForm>
+                    <MudTextField T="string" Label="Name" @bind-Value="@_productName"></MudTextField>
+                    <MudTextField T="string" Label="Description" @bind-Value="@_productDescription"></MudTextField>
+                    <MudNumericField Label="Price" @bind-Value="@_productPrice"></MudNumericField>
+                    <MudTextField T="string" Label="Image URL" @bind-Value="@_productImageUrl"></MudTextField>
+                    <MudSelect Label="Category" @bind-Value="@_selectedCategory">
+                        @foreach (var category in AllProductCategories)
+                        {
+                            <MudSelectItem T="string" Value="@category.Name"></MudSelectItem>
+                        }
+                    </MudSelect>
+                    <MudButton Color="Color.Primary" Style="margin: 10px;" Variant="Variant.Filled" OnClick="@AddProduct">Add Product</MudButton>
+                </MudForm>
+            </MudGrid>
+        </MudContainer>
+    </MudItem>
+
+    <MudItem xs="3">
+        <MudContainer Fixed="true" Class="justify-content-center">
+            <MudText Typo="Typo.h6">Add Category</MudText>
+            <MudGrid>
+                <MudForm>
+                    <MudTextField T="string" Label="Name" @bind-Value="@_categoryName"></MudTextField>
+                    <MudButton Color="Color.Primary" Style="margin: 10px;" Variant="Variant.Filled" OnClick="@AddCategory">Add Category</MudButton>
+                </MudForm>
+            </MudGrid>
+        </MudContainer>
+    </MudItem>
+    <MudItem xs="3">
+        <MudContainer Fixed="true" Class="justify-content-center">
+        </MudContainer>
+    </MudItem>
+
+    <MudItem xs="3">
+        <MudContainer Fixed="true" Class="justify-content-center">
+            <MudGrid>
+                <MudForm>
+                    <div style="padding-top: 150px;" />
+
+                    <MudButton Color="Color.Dark" Style="margin: 10px;" Variant="Variant.Filled" Target="_blank" Href="https://www.youtube.com/watch?v=dQw4w9WgXcQ">Add Glory</MudButton>
+                </MudForm>
+            </MudGrid>
+        </MudContainer>
+    </MudItem>
+</MudGrid>
+

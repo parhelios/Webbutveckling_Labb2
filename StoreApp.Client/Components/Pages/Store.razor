@@ -1,0 +1,41 @@
+﻿@page "/Store"
+
+@using StoreApp.Shared.Interfaces
+@using StoreApp.Shared.Dtos.ProductDtos
+@using StoreApp.Shared.Dtos.UserDtos
+@rendermode InteractiveServer
+@inject IHttpClientFactory HttpClientFactory
+@inject ICategoryService<ProductCategoryDto> CategoryService
+@inject IProductService<ProductDto> ProductService
+@inject IShoppingCartService<ProductDto> ShoppingCartService
+@inject IUserService<UserDto> UserService
+
+<PageTitle>Store</PageTitle>
+
+<h3>Store</h3>
+<div style="padding-top: 50px;" />
+<MudText Align="Align.Center" Typo="Typo.h3">Store</MudText>
+<div style="padding-top: 50px;" />
+
+<MudTextField @bind-Value="SearchInputText" Label="Search our products" Variant="Variant.Outlined"></MudTextField>
+<MudButton Variant="Variant.Filled" Color="Color.Info" @onclick="SearchProducts" Style="margin: 10px;">Search</MudButton>
+<MudButton Variant="Variant.Filled" Color="Color.Info" @onclick="ClearSearchQuery" Style="margin: 10px;">Clear</MudButton>
+
+
+<MudGrid Justify="Justify.Center" Spacing="3">
+	<MudVirtualize Items="@StoreProductDtos">
+		<MudItem lg="4">
+			<MudCard Class="mx-12">
+				<MudImage Src="@context.ImageUrl" Height="200" Width="200" Alt="@context.Name" Elevation="5" Class="rounded-lg ma-4" ObjectFit="ObjectFit.Contain" ObjectPosition="ObjectPosition.Center" />
+				<MudCardContent>
+					<MudText Typo="Typo.h5">@context.Name</MudText>
+					<MudText Typo="Typo.body2">@context.Description</MudText>
+					<MudText Typo="Typo.body1">@context.Price SEK</MudText>
+				</MudCardContent>
+				<MudCardActions>
+					<MudButton Variant="Variant.Filled" Color="Color.Info" ButtonType="ButtonType.Button" OnClick="@( () => AddToCart(context) )">Add to cart</MudButton>
+				</MudCardActions>
+			</MudCard>
+		</MudItem>
+	</MudVirtualize>
+</MudGrid>

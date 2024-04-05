@@ -1,0 +1,146 @@
+﻿@page "/CustomerSettings"
+@using StoreApp.Shared.Dtos.UserDtos
+@using StoreApp.Shared.Interfaces
+@using System.ComponentModel.DataAnnotations
+@using System.Security.Cryptography.X509Certificates
+@using StoreApp.Client.Services
+@using StoreApp.Shared.Dtos.OrderDtos
+@using StoreApp.Shared.Dtos.ProductDtos
+@using StoreApp.Shared.Models
+@rendermode InteractiveServer
+@inject UserService UserService
+@inject IAuthenticationService AuthenticationService
+@inject IProductService<ProductDto> ProductService
+
+<PageTitle>Customer Settings</PageTitle>
+
+<h3>CustomerSettings</h3>
+
+<div style="padding-top: 50px;" />
+<MudText Align="Align.Center" Typo="Typo.h3">Customer Settings</MudText>
+<div style="padding-top: 50px;" />
+
+<MudContainer>
+    <MudPaper>
+        <MudTable Items="@Orders" Hover="true" LoadingProgressColor="Color.Info" Filter="new Func<OrderDto,bool>(FilterFuncOrder1)" @bind-SelectedItem="_selectedItemOrder" RowClass="cursor-pointer">
+            <ToolBarContent>
+                <MudText Typo="Typo.h6">Orders</MudText>
+                <MudSpacer />
+                <MudTextField @bind-Value="_searchStringOrder" Placeholder="Search" Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.Search" IconSize="Size.Medium" Class="mt-0"></MudTextField>
+            </ToolBarContent>
+            <HeaderContent>
+                <MudTh>Order ID</MudTh>
+                <MudTh>Customer ID</MudTh>
+                <MudTh>Order Date</MudTh>
+                <MudTh>Total Price</MudTh>
+                <MudTh>Status</MudTh>
+                <MudTh>Products</MudTh>
+            </HeaderContent>
+            <RowTemplate Context="order">
+                <MudTd>@order.Id.ToString()</MudTd>
+                <MudTd>@order.CustomerId</MudTd>
+                <MudTd>@order.OrderDate.ToString("MM/dd/yyyy")</MudTd>
+                <MudTd>@order.TotalPrice</MudTd>
+                <MudTd>@(order.Status ? "Active" : "Inactive")</MudTd>
+                <MudTd>
+                    <MudTd><MudButton Variant="Variant.Outlined" Size="Size.Small" OnClick="@(() => ShowBtnPress(order.Id))">@((order.ShowDetails == true) ? "Hide" : "Show") Product Details</MudButton></MudTd>
+                </MudTd>
+            </RowTemplate>
+            <ChildRowContent>
+                @if (context.ShowDetails)
+                {
+                    <MudTr>
+                        <td colspan="4">
+                            <MudCard Elevation="0">
+                                <MudCardHeader>
+                                    <CardHeaderContent>
+                                        <MudText Typo="Typo.body1">Products in order for order id @context.Id</MudText>
+                                    </CardHeaderContent>
+                                </MudCardHeader>
+                                <MudCardContent Class="pa-0">
+                                    <MudTable Items="@context.Products" Context="Products" Hover="true" Breakpoint="Breakpoint.Sm" Elevation="0">
+                                        <HeaderContent>
+                                            <MudTh>Products</MudTh>
+                                            <MudTh>Amount</MudTh>
+                                            <MudTh>Price</MudTh>
+                                        </HeaderContent>
+                                        <RowTemplate>
+                                            <MudTd DataLabel="Products">
+                                                @Products.Product.Name
+                                            </MudTd>
+                                            <MudTd DataLabel="Amount">
+                                                @Products.Amount
+                                            </MudTd>
+                                            <MudTd DataLabel="Price">
+                                                @((Products.Product.Price * Products.Amount).ToString("0.00")) SEK
+                                            </MudTd>
+                                        </RowTemplate>
+                                    </MudTable>
+                                </MudCardContent>
+                            </MudCard>
+                        </td>
+                    </MudTr>
+                }
+            </ChildRowContent>
+            <PagerContent>
+                <MudTablePager />
+            </PagerContent>
+        </MudTable>
+    </MudPaper>
+</MudContainer>
+
+<div style="padding-top: 50px;" />
+
+<MudContainer>
+    <MudPaper>
+        <MudText Typo="Typo.h6">Update user information</MudText>
+
+        @if (_user != null)
+        {
+            <MudGrid>
+                <MudItem xs="12" md="6">
+                    <MudTextField Disabled="true" Label="Email" @bind-Value="_user.Email" />
+                </MudItem>
+                <MudItem xs="12" md="6">
+                    <MudTextField Disabled="true" Label="Password" @bind-Value="_user.Password" />
+                </MudItem>
+                <MudItem xs="12" md="6">
+                    <MudTextField Label="First Name" @bind-Value="_user.FirstName" />
+                </MudItem>
+                <MudItem xs="12" md="6">
+                    <MudTextField Label="Last Name" @bind-Value="_user.LastName" />
+                </MudItem>
+                <MudItem xs="12" md="6">
+                    <MudTextField Label="Phone" @bind-Value="_user.ContactInfo.Phone" />
+                </MudItem>
+                <MudItem xs="12" md="6">
+                    <MudTextField Label="Address" @bind-Value="_user.ContactInfo.Address" />
+                </MudItem>
+                <MudItem xs="12" md="6">
+                    <MudTextField Label="Zip Code" @bind-Value="_user.ContactInfo.ZipCode" />
+                </MudItem>
+                <MudItem xs="12" md="6">
+                    <MudTextField Label="City" @bind-Value="_user.ContactInfo.City" />
+                </MudItem>
+                <MudItem xs="12" md="6">
+                    <MudTextField Label="Region" @bind-Value="_user.ContactInfo.Region" />
+                </MudItem>
+                <MudItem xs="12" md="6">
+                    <MudTextField Label="Country" @bind-Value="_user.ContactInfo.Country" />
+                </MudItem>
+            </MudGrid>
+            <MudButton Color="Color.Primary" Variant="Variant.Filled" OnClick="@UpdateUserProfile">Update</MudButton>
+            <div style="padding-top: 50px;" />
+
+            <MudText Typo="Typo.h6">Update password</MudText>
+            <MudTextField Disabled="true" Label="Old Password" @bind-Value="_user.Password" />
+            <MudTextField Label="New Password" @bind-Value="@_newPassword" />
+            <MudButton Color="Color.Primary" Variant="Variant.Filled" OnClick="@UpdatePassword">Update</MudButton>
+        }
+        else
+        {
+            <p>User not found.</p>
+        }
+    </MudPaper>
+</MudContainer>
+<div style="padding-top: 50px;" />
